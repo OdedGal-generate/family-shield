@@ -55,9 +55,22 @@ router.post('/google', validate(googleSchema), async (req, res) => {
   }
 });
 
+// Normalize phone: accept local Israeli (05x) or international (+972)
+function normalizePhone(phone) {
+  let p = phone.replace(/[\s\-()]/g, '');
+  // Israeli local: 05xxxxxxxx → +97205xxxxxxxx is wrong, should be +9725xxxxxxxx
+  if (/^0\d{9}$/.test(p)) {
+    p = '+972' + p.slice(1);
+  }
+  if (!p.startsWith('+')) {
+    p = '+' + p;
+  }
+  return p;
+}
+
 // Phone OTP - Request
 const phoneRequestSchema = Joi.object({
-  phone: Joi.string().pattern(/^\+\d{10,15}$/).required()
+  phone: Joi.string().min(9).max(20).required()
 });
 
 const phoneOtpLimiter = rateLimit({
@@ -68,7 +81,7 @@ const phoneOtpLimiter = rateLimit({
 });
 
 router.post('/phone/request', phoneOtpLimiter, validate(phoneRequestSchema), (req, res) => {
-  const { phone } = req.body;
+  const phone = normalizePhone(req.body.phone);
   const code = String(Math.floor(100000 + Math.random() * 900000));
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
 
@@ -83,12 +96,13 @@ router.post('/phone/request', phoneOtpLimiter, validate(phoneRequestSchema), (re
 
 // Phone OTP - Verify
 const phoneVerifySchema = Joi.object({
-  phone: Joi.string().pattern(/^\+\d{10,15}$/).required(),
+  phone: Joi.string().min(9).max(20).required(),
   code: Joi.string().length(6).required()
 });
 
 router.post('/phone/verify', validate(phoneVerifySchema), (req, res) => {
-  const { phone, code } = req.body;
+  const phone = normalizePhone(req.body.phone);
+  const { code } = req.body;
   const otp = db.prepare(
     "SELECT * FROM phone_otps WHERE phone = ? AND code = ? AND used = 0 AND expires_at > datetime('now') ORDER BY id DESC LIMIT 1"
   ).get(phone, code);

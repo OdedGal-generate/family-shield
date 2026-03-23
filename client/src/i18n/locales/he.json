@@ -5,12 +5,16 @@
     "subtitle": "Family Shield",
     "googleBtn": "התחברות עם Google",
     "or": "או",
-    "phonePlaceholder": "מספר טלפון (למשל +972501234567)",
+    "phonePlaceholder": "מספר טלפון (למשל 0501234567)",
     "sendCode": "שליחת קוד",
     "codePlaceholder": "הזן קוד בן 6 ספרות",
     "verify": "אימות",
     "sendingCode": "שולח קוד...",
-    "verifying": "מאמת..."
+    "verifying": "מאמת...",
+    "devCodeLabel": "הקוד שלך",
+    "sendFailed": "שליחת הקוד נכשלה",
+    "verifyFailed": "האימות נכשל",
+    "googleFailed": "ההתחברות עם Google נכשלה"
   },
   "home": {
     "myGroups": "הקבוצות שלי",

@@ -5,12 +5,16 @@
     "subtitle": "מגן משפחתי",
     "googleBtn": "Sign in with Google",
     "or": "or",
-    "phonePlaceholder": "Phone number (e.g. +972501234567)",
+    "phonePlaceholder": "Phone number (e.g. 0501234567)",
     "sendCode": "Send Code",
     "codePlaceholder": "Enter 6-digit code",
     "verify": "Verify",
     "sendingCode": "Sending code...",
-    "verifying": "Verifying..."
+    "verifying": "Verifying...",
+    "devCodeLabel": "Your code",
+    "sendFailed": "Failed to send code",
+    "verifyFailed": "Verification failed",
+    "googleFailed": "Google login failed"
   },
   "home": {
     "myGroups": "My Groups",
