@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext.jsx';
-import { useGroup, usePostSafety, usePendingRequests, useReviewRequest, useMessages, useSendMessage } from '../api/hooks.js';
+import { useGroup, usePostSafety, useCreateInvite, usePendingRequests, useReviewRequest, useMessages, useSendMessage } from '../api/hooks.js';
 import Avatar from '../components/Avatar.jsx';
 import SafetyBadge from '../components/SafetyBadge.jsx';
 import RoleBadge from '../components/RoleBadge.jsx';
@@ -15,8 +15,10 @@ export default function GroupPage() {
   const { user } = useAuth();
   const { data, isLoading } = useGroup(id);
   const postSafety = usePostSafety(id);
+  const createInvite = useCreateInvite(id);
   const [tab, setTab] = useState('members');
   const [sosConfirm, setSosConfirm] = useState(false);
+  const [inviteCopied, setInviteCopied] = useState(false);
 
   if (isLoading) return <LoadingScreen />;
   if (!data) return <div className="p-4 text-text-secondary">{t('common.error')}</div>;
@@ -38,6 +40,26 @@ export default function GroupPage() {
     setSosConfirm(false);
   };
 
+  const handleShareInvite = async () => {
+    try {
+      const result = await createInvite.mutateAsync({});
+      const url = result.url;
+      // Try native share first (mobile), fallback to clipboard
+      if (navigator.share) {
+        await navigator.share({ title: group.name, text: t('group.inviteText') || 'Join my group on Family Shield!', url });
+      } else {
+        await navigator.clipboard.writeText(url);
+      }
+      setInviteCopied(true);
+      setTimeout(() => setInviteCopied(false), 3000);
+    } catch (err) {
+      // User cancelled share or error
+      if (err.name !== 'AbortError') {
+        console.error('Share failed:', err);
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
@@ -49,11 +71,27 @@ export default function GroupPage() {
             </button>
             <h1 className="font-bold text-lg">{group.name}</h1>
           </div>
-          {isAdmin && (
-            <button onClick={() => navigate(`/group/${id}/settings`)} className="text-text-secondary hover:text-text-primary p-2">
-              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
-            </button>
-          )}
+          <div className="flex items-center gap-1">
+            {isAdmin && (
+              <button
+                onClick={handleShareInvite}
+                disabled={createInvite.isPending}
+                className={`p-2 transition ${inviteCopied ? 'text-accent-green' : 'text-text-secondary hover:text-text-primary'}`}
+                title={inviteCopied ? t('groupSettings.copied') : t('group.shareInvite') || 'Share invite'}
+              >
+                {inviteCopied ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                )}
+              </button>
+            )}
+            {isAdmin && (
+              <button onClick={() => navigate(`/group/${id}/settings`)} className="text-text-secondary hover:text-text-primary p-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

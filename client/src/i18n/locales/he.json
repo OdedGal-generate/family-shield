@@ -49,7 +49,10 @@
     "loadMore": "טען הודעות ישנות",
     "noMessages": "אין הודעות עדיין. תתחילו לדבר!",
     "joinedGroup": "הצטרף/ה לקבוצה",
-    "leftGroup": "עזב/ה את הקבוצה"
+    "leftGroup": "עזב/ה את הקבוצה",
+    "shareInvite": "שתף הזמנה",
+    "inviteText": "הצטרפו לקבוצה שלי ב-Family Shield!",
+    "inviteCopied": "קישור ההזמנה הועתק!"
   },
   "groupSettings": {
     "title": "הגדרות קבוצה",
@@ -89,6 +92,7 @@
     "waiting": "ממתין לאישור...",
     "approved": "אושר! מעביר לקבוצה...",
     "rejected": "הבקשה נדחתה",
+    "joining": "מצטרף...",
     "loginFirst": "התחבר כדי להצטרף",
     "invalidInvite": "קישור הזמנה לא תקין"
   },

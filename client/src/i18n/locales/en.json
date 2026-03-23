@@ -49,7 +49,10 @@
     "loadMore": "Load older messages",
     "noMessages": "No messages yet. Start the conversation!",
     "joinedGroup": "joined the group",
-    "leftGroup": "left the group"
+    "leftGroup": "left the group",
+    "shareInvite": "Share invite",
+    "inviteText": "Join my group on Family Shield!",
+    "inviteCopied": "Invite link copied!"
   },
   "groupSettings": {
     "title": "Group Settings",
@@ -89,6 +92,7 @@
     "waiting": "Waiting for approval...",
     "approved": "Approved! Redirecting...",
     "rejected": "Request rejected",
+    "joining": "Joining...",
     "loginFirst": "Sign in to join",
     "invalidInvite": "Invalid invite link"
   },

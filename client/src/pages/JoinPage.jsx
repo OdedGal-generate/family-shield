@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext.jsx';
-import { useInviteInfo, useRequestJoin, useJoinRequestStatus } from '../api/hooks.js';
+import { useInviteInfo } from '../api/hooks.js';
+import api from '../api/client.js';
 import LoadingScreen from '../components/LoadingScreen.jsx';
 
 export default function JoinPage() {
@@ -11,29 +12,23 @@ export default function JoinPage() {
   const navigate = useNavigate();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { data: info, isLoading, isError } = useInviteInfo(token);
-  const requestJoin = useRequestJoin();
-  const [requested, setRequested] = useState(false);
-  const { data: reqStatus } = useJoinRequestStatus(token, requested);
-
-  useEffect(() => {
-    if (reqStatus?.status === 'approved') {
-      setTimeout(() => navigate(`/group/${info?.groupId}`), 1500);
-    }
-  }, [reqStatus, info, navigate]);
+  const [joining, setJoining] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
 
   if (authLoading || isLoading) return <LoadingScreen />;
 
   if (!isAuthenticated) {
     return (
-      <div className="flex items-center justify-center min-h-screen px-4">
+      <div className="flex items-center justify-center min-h-screen px-6">
         <div className="bg-card border border-border-subtle rounded-2xl p-8 text-center w-full max-w-sm">
-          <div className="text-4xl mb-4">🔗</div>
-          <p className="text-text-secondary mb-4">{t('joinPage.loginFirst')}</p>
+          <div className="text-5xl mb-4">🔗</div>
+          <p className="text-text-secondary mb-5">{t('joinPage.loginFirst')}</p>
           <button
             onClick={() => navigate(`/login?redirect=/join/${token}`)}
-            className="w-full bg-gradient-to-r from-accent-green to-emerald-600 text-white py-3 rounded-xl font-medium"
+            className="w-full bg-gradient-to-r from-accent-green to-emerald-600 text-white py-4 rounded-xl font-semibold text-base"
           >
-            {t('login.title')}
+            {t('login.loginBtn')}
           </button>
         </div>
       </div>
@@ -42,11 +37,11 @@ export default function JoinPage() {
 
   if (isError) {
     return (
-      <div className="flex items-center justify-center min-h-screen px-4">
+      <div className="flex items-center justify-center min-h-screen px-6">
         <div className="bg-card border border-border-subtle rounded-2xl p-8 text-center w-full max-w-sm">
-          <div className="text-4xl mb-4">❌</div>
-          <p className="text-accent-red">{t('joinPage.invalidInvite')}</p>
-          <button onClick={() => navigate('/')} className="text-text-secondary text-sm mt-4 hover:text-text-primary">
+          <div className="text-5xl mb-4">❌</div>
+          <p className="text-accent-red mb-4">{t('joinPage.invalidInvite')}</p>
+          <button onClick={() => navigate('/')} className="text-text-secondary text-sm hover:text-text-primary">
             ← {t('common.back')}
           </button>
         </div>
@@ -55,38 +50,51 @@ export default function JoinPage() {
   }
 
   const handleJoin = async () => {
-    await requestJoin.mutateAsync(token);
-    setRequested(true);
+    setJoining(true);
+    setError('');
+    try {
+      const res = await api.post(`/join/${token}`);
+      setSuccess(true);
+      // Redirect to group after brief success message
+      setTimeout(() => navigate(`/group/${res.data.groupId}`), 1000);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to join');
+      setJoining(false);
+    }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen px-4">
+    <div className="flex items-center justify-center min-h-screen px-6">
       <div className="bg-card border border-border-subtle rounded-2xl p-8 text-center w-full max-w-sm">
-        <div className="text-4xl mb-4">🛡️</div>
+        <div className="text-5xl mb-4">🛡️</div>
         <h1 className="text-xl font-bold mb-2">{t('joinPage.title')}</h1>
         <h2 className="text-lg font-semibold text-accent-green mb-1">{info?.groupName}</h2>
         <p className="text-text-secondary text-sm mb-6">{t('joinPage.memberCount', { count: info?.memberCount })}</p>
 
-        {reqStatus?.status === 'approved' ? (
-          <div className="bg-green-bg text-accent-green py-3 rounded-xl font-medium">
-            {t('joinPage.approved')}
+        {error && (
+          <div className="bg-red-bg border border-accent-red/20 text-accent-red text-sm rounded-xl p-3 mb-4">
+            {error}
           </div>
-        ) : reqStatus?.status === 'rejected' ? (
-          <div className="bg-red-bg text-accent-red py-3 rounded-xl font-medium">
-            {t('joinPage.rejected')}
-          </div>
-        ) : requested || requestJoin.data?.alreadyPending ? (
-          <div className="bg-yellow-bg text-accent-yellow py-3 rounded-xl font-medium flex items-center justify-center gap-2">
-            <div className="w-4 h-4 border-2 border-accent-yellow border-t-transparent rounded-full animate-spin" />
-            {t('joinPage.waiting')}
+        )}
+
+        {success ? (
+          <div className="bg-green-bg text-accent-green py-4 rounded-xl font-semibold text-base">
+            ✅ {t('joinPage.approved')}
           </div>
         ) : (
           <button
             onClick={handleJoin}
-            disabled={requestJoin.isPending}
-            className="w-full bg-gradient-to-r from-accent-green to-emerald-600 text-white py-3 rounded-xl font-medium disabled:opacity-50"
+            disabled={joining}
+            className="w-full bg-gradient-to-r from-accent-green to-emerald-600 text-white py-4 rounded-xl font-semibold text-base disabled:opacity-50"
           >
-            {t('joinPage.requestJoin')}
+            {joining ? (
+              <span className="flex items-center justify-center gap-2">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                {t('joinPage.joining') || 'Joining...'}
+              </span>
+            ) : (
+              t('joinPage.requestJoin')
+            )}
           </button>
         )}
       </div>

@@ -24,41 +24,39 @@ router.get('/:token', (req, res) => {
   res.json({ groupName: invite.group_name, memberCount: invite.member_count, groupId: invite.group_id });
 });
 
-// Request to join
+// Join via invite link — auto-approve (no admin approval needed)
 router.post('/:token', requireAuth, (req, res) => {
   const invite = getValidInvite(req.params.token);
   if (!invite) return res.status(404).json({ error: 'Invalid or expired invite' });
 
   // Check if already a member
   const existing = db.prepare('SELECT * FROM group_members WHERE group_id = ? AND user_id = ?').get(invite.group_id, req.user.id);
-  if (existing) return res.status(400).json({ error: 'Already a member of this group' });
+  if (existing) return res.json({ joined: true, groupId: invite.group_id });
 
-  // Check if already has a pending request
-  const pendingReq = db.prepare("SELECT * FROM join_requests WHERE group_id = ? AND user_id = ? AND status = 'pending'").get(invite.group_id, req.user.id);
-  if (pendingReq) return res.json({ request: pendingReq, alreadyPending: true });
+  // Auto-approve: add directly to group
+  db.prepare('INSERT INTO group_members (group_id, user_id, role) VALUES (?, ?, ?)').run(invite.group_id, req.user.id, 'member');
 
-  const result = db.prepare('INSERT INTO join_requests (group_id, user_id, invite_id) VALUES (?, ?, ?)').run(invite.group_id, req.user.id, invite.id);
-  const request = db.prepare('SELECT * FROM join_requests WHERE id = ?').get(result.lastInsertRowid);
+  // Increment invite use count
+  db.prepare('UPDATE group_invites SET use_count = use_count + 1 WHERE id = ?').run(invite.id);
 
-  // Notify admins and owner
+  // Record in join_requests for history
+  db.prepare("INSERT INTO join_requests (group_id, user_id, invite_id, status, reviewed_at) VALUES (?, ?, ?, 'approved', datetime('now'))").run(invite.group_id, req.user.id, invite.id);
+
+  // Add system message
+  db.prepare("INSERT INTO messages (group_id, user_id, content, type) VALUES (?, ?, ?, 'system')").run(
+    invite.group_id, req.user.id, `${req.user.name} joined the group`
+  );
+
+  // Notify admins
   const admins = db.prepare("SELECT user_id FROM group_members WHERE group_id = ? AND role IN ('owner','admin')").all(invite.group_id);
-  const adminIds = admins.map(a => a.user_id);
+  const adminIds = admins.map(a => a.user_id).filter(id => id !== req.user.id);
   sendPushToUsers(adminIds, {
-    title: 'New Join Request',
-    body: `${req.user.name} wants to join the group`,
+    title: 'New Member',
+    body: `${req.user.name} joined the group`,
     data: { groupId: invite.group_id }
   }).catch(() => {});
 
-  res.status(201).json({ request });
-});
-
-// Check join request status
-router.get('/:token/status', requireAuth, (req, res) => {
-  const invite = getValidInvite(req.params.token);
-  if (!invite) return res.status(404).json({ error: 'Invalid or expired invite' });
-  const request = db.prepare("SELECT * FROM join_requests WHERE group_id = ? AND user_id = ? ORDER BY requested_at DESC LIMIT 1").get(invite.group_id, req.user.id);
-  if (!request) return res.status(404).json({ error: 'No join request found' });
-  res.json({ request });
+  res.status(201).json({ joined: true, groupId: invite.group_id });
 });
 
 export default router;
