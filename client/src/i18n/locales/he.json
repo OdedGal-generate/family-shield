@@ -3,18 +3,16 @@
   "login": {
     "title": "מגן משפחתי",
     "subtitle": "Family Shield",
-    "googleBtn": "התחברות עם Google",
-    "or": "או",
-    "phonePlaceholder": "מספר טלפון (למשל 0501234567)",
-    "sendCode": "שליחת קוד",
-    "codePlaceholder": "הזן קוד בן 6 ספרות",
-    "verify": "אימות",
-    "sendingCode": "שולח קוד...",
-    "verifying": "מאמת...",
-    "devCodeLabel": "הקוד שלך",
-    "sendFailed": "שליחת הקוד נכשלה",
-    "verifyFailed": "האימות נכשל",
-    "googleFailed": "ההתחברות עם Google נכשלה"
+    "namePlaceholder": "השם שיוצג באפליקציה",
+    "usernamePlaceholder": "שם משתמש (טלפון או מייל)",
+    "passwordPlaceholder": "סיסמה",
+    "loginBtn": "התחברות",
+    "register": "הרשמה",
+    "loggingIn": "מתחבר...",
+    "registering": "נרשם...",
+    "switchToRegister": "אין לך חשבון? הירשם כאן",
+    "switchToLogin": "יש לך חשבון? התחבר כאן",
+    "failed": "ההתחברות נכשלה"
   },
   "home": {
     "myGroups": "הקבוצות שלי",

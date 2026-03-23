@@ -1,10 +1,10 @@
 import { Router } from 'express';
 import jwt from 'jsonwebtoken';
 import Joi from 'joi';
+import crypto from 'crypto';
 import db from '../db/index.js';
 import { requireAuth } from '../middleware/auth.js';
 import { validate, sanitize } from '../middleware/validate.js';
-import rateLimit from 'express-rate-limit';
 
 const router = Router();
 
@@ -12,109 +12,70 @@ function generateToken(userId) {
   return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '30d' });
 }
 
-function findOrCreateUserByEmail(email, name, avatarUrl) {
-  let user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
-  if (!user) {
-    const result = db.prepare('INSERT INTO users (name, email, avatar_url) VALUES (?, ?, ?)').run(name, email, avatarUrl);
-    user = db.prepare('SELECT * FROM users WHERE id = ?').get(result.lastInsertRowid);
-  }
-  return user;
+// Simple password hashing with SHA-256 + salt
+function hashPassword(password, salt) {
+  if (!salt) salt = crypto.randomBytes(16).toString('hex');
+  const hash = crypto.createHash('sha256').update(salt + password).digest('hex');
+  return { hash, salt };
 }
 
-function findOrCreateUserByPhone(phone) {
-  let user = db.prepare('SELECT * FROM users WHERE phone = ?').get(phone);
-  if (!user) {
-    const name = phone.slice(-4);
-    const result = db.prepare('INSERT INTO users (name, phone) VALUES (?, ?)').run(name, phone);
-    user = db.prepare('SELECT * FROM users WHERE id = ?').get(result.lastInsertRowid);
-  }
-  return user;
+function verifyPassword(password, storedHash, storedSalt) {
+  const { hash } = hashPassword(password, storedSalt);
+  return hash === storedHash;
 }
 
-// Google Sign-In
-const googleSchema = Joi.object({
-  idToken: Joi.string().required()
+// Register
+const registerSchema = Joi.object({
+  username: Joi.string().min(3).max(30).pattern(/^[a-zA-Z0-9._\-@+]+$/).required()
+    .messages({ 'string.pattern.base': 'Username can contain letters, numbers, dots, dashes, @, +' }),
+  password: Joi.string().min(4).max(100).required(),
+  name: Joi.string().min(1).max(50).required()
 });
 
-router.post('/google', validate(googleSchema), async (req, res) => {
-  try {
-    const { idToken } = req.body;
-    const response = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`);
-    if (!response.ok) {
-      return res.status(401).json({ error: 'Invalid Google token' });
-    }
-    const payload = await response.json();
-    if (payload.aud !== process.env.GOOGLE_CLIENT_ID) {
-      return res.status(401).json({ error: 'Token not intended for this app' });
-    }
-    const user = findOrCreateUserByEmail(payload.email, payload.name, payload.picture);
-    const token = generateToken(user.id);
-    res.json({ user: { id: user.id, name: user.name, email: user.email, avatar_url: user.avatar_url, locale: user.locale }, token });
-  } catch {
-    res.status(500).json({ error: 'Authentication failed' });
-  }
-});
+router.post('/register', validate(registerSchema), (req, res) => {
+  const { username, password, name } = req.body;
 
-// Normalize phone: accept local Israeli (05x) or international (+972)
-function normalizePhone(phone) {
-  let p = phone.replace(/[\s\-()]/g, '');
-  // Israeli local: 05xxxxxxxx → +97205xxxxxxxx is wrong, should be +9725xxxxxxxx
-  if (/^0\d{9}$/.test(p)) {
-    p = '+972' + p.slice(1);
-  }
-  if (!p.startsWith('+')) {
-    p = '+' + p;
-  }
-  return p;
-}
-
-// Phone OTP - Request
-const phoneRequestSchema = Joi.object({
-  phone: Joi.string().min(9).max(20).required()
-});
-
-const phoneOtpLimiter = rateLimit({
-  windowMs: 10 * 60 * 1000,
-  max: 3,
-  keyGenerator: (req) => req.body.phone || req.ip,
-  message: { error: 'Too many OTP requests, try again later' }
-});
-
-router.post('/phone/request', phoneOtpLimiter, validate(phoneRequestSchema), (req, res) => {
-  const phone = normalizePhone(req.body.phone);
-  const code = String(Math.floor(100000 + Math.random() * 900000));
-  const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
-
-  db.prepare('INSERT INTO phone_otps (phone, code, expires_at) VALUES (?, ?, ?)').run(phone, code, expiresAt);
-
-  const response = { success: true };
-  if (process.env.NODE_ENV === 'development' || process.env.DEV_OTP === 'true') {
-    response.code = code;
-  }
-  res.json(response);
-});
-
-// Phone OTP - Verify
-const phoneVerifySchema = Joi.object({
-  phone: Joi.string().min(9).max(20).required(),
-  code: Joi.string().length(6).required()
-});
-
-router.post('/phone/verify', validate(phoneVerifySchema), (req, res) => {
-  const phone = normalizePhone(req.body.phone);
-  const { code } = req.body;
-  const otp = db.prepare(
-    "SELECT * FROM phone_otps WHERE phone = ? AND code = ? AND used = 0 AND expires_at > datetime('now') ORDER BY id DESC LIMIT 1"
-  ).get(phone, code);
-
-  if (!otp) {
-    return res.status(401).json({ error: 'Invalid or expired code' });
+  const existing = db.prepare('SELECT id FROM users WHERE username = ?').get(username);
+  if (existing) {
+    return res.status(409).json({ error: 'Username already taken' });
   }
 
-  db.prepare('UPDATE phone_otps SET used = 1 WHERE id = ?').run(otp.id);
-  const user = findOrCreateUserByPhone(phone);
+  const { hash, salt } = hashPassword(password);
+  const displayName = sanitize(name);
+
+  const result = db.prepare(
+    'INSERT INTO users (name, username, password, email, phone) VALUES (?, ?, ?, ?, ?)'
+  ).run(displayName, username, `${salt}:${hash}`, null, null);
+
+  const user = db.prepare('SELECT id, name, username, email, phone, avatar_url, locale FROM users WHERE id = ?').get(result.lastInsertRowid);
   const token = generateToken(user.id);
-  res.json({ user: { id: user.id, name: user.name, phone: user.phone, locale: user.locale }, token });
+  res.json({ user: { id: user.id, name: user.name, username: user.username, locale: user.locale }, token });
+});
+
+// Login
+const loginSchema = Joi.object({
+  username: Joi.string().required(),
+  password: Joi.string().required()
+});
+
+router.post('/login', validate(loginSchema), (req, res) => {
+  const { username, password } = req.body;
+
+  const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
+  if (!user) {
+    return res.status(401).json({ error: 'Invalid username or password' });
+  }
+
+  const [salt, storedHash] = user.password.split(':');
+  if (!verifyPassword(password, storedHash, salt)) {
+    return res.status(401).json({ error: 'Invalid username or password' });
+  }
+
+  const token = generateToken(user.id);
+  res.json({
+    user: { id: user.id, name: user.name, username: user.username, locale: user.locale },
+    token
+  });
 });
 
 // Get current user
@@ -141,7 +102,7 @@ router.patch('/me', requireAuth, validate(updateMeSchema), (req, res) => {
   }
   values.push(req.user.id);
   db.prepare(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`).run(...values);
-  const user = db.prepare('SELECT id, name, email, phone, avatar_url, locale FROM users WHERE id = ?').get(req.user.id);
+  const user = db.prepare('SELECT id, name, username, email, phone, avatar_url, locale FROM users WHERE id = ?').get(req.user.id);
   res.json({ user });
 });
 

@@ -3,18 +3,16 @@
   "login": {
     "title": "Family Shield",
     "subtitle": "מגן משפחתי",
-    "googleBtn": "Sign in with Google",
-    "or": "or",
-    "phonePlaceholder": "Phone number (e.g. 0501234567)",
-    "sendCode": "Send Code",
-    "codePlaceholder": "Enter 6-digit code",
-    "verify": "Verify",
-    "sendingCode": "Sending code...",
-    "verifying": "Verifying...",
-    "devCodeLabel": "Your code",
-    "sendFailed": "Failed to send code",
-    "verifyFailed": "Verification failed",
-    "googleFailed": "Google login failed"
+    "namePlaceholder": "Your display name",
+    "usernamePlaceholder": "Username (phone or email)",
+    "passwordPlaceholder": "Password",
+    "loginBtn": "Sign In",
+    "register": "Create Account",
+    "loggingIn": "Signing in...",
+    "registering": "Creating account...",
+    "switchToRegister": "Don't have an account? Sign up",
+    "switchToLogin": "Already have an account? Sign in",
+    "failed": "Login failed"
   },
   "home": {
     "myGroups": "My Groups",

@@ -41,40 +41,40 @@ export default function GroupPage() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
-      <div className="bg-card border-b border-border-subtle px-4 py-3">
+      <div className="bg-card border-b border-border-subtle px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button onClick={() => navigate('/')} className="text-text-secondary hover:text-text-primary">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
             </button>
             <h1 className="font-bold text-lg">{group.name}</h1>
           </div>
           {isAdmin && (
-            <button onClick={() => navigate(`/group/${id}/settings`)} className="text-text-secondary hover:text-text-primary p-1">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+            <button onClick={() => navigate(`/group/${id}/settings`)} className="text-text-secondary hover:text-text-primary p-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
             </button>
           )}
         </div>
       </div>
 
       {/* Safety Buttons */}
-      <div className="bg-card/50 border-b border-border-subtle px-4 py-3">
-        <div className="flex gap-2 mb-2">
+      <div className="bg-card/50 border-b border-border-subtle px-6 py-4">
+        <div className="flex gap-3 mb-2">
           <button
             onClick={() => handleSafety('safe')}
-            className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition ${myMember?.safety_status === 'safe' ? 'bg-accent-green text-white' : 'bg-green-bg text-accent-green border border-accent-green/20'}`}
+            className={`flex-1 py-3.5 rounded-xl text-sm font-semibold transition ${myMember?.safety_status === 'safe' ? 'bg-accent-green text-white' : 'bg-green-bg text-accent-green border border-accent-green/20'}`}
           >
             {t('group.safe')}
           </button>
           <button
             onClick={() => handleSafety('waiting')}
-            className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition ${myMember?.safety_status === 'waiting' ? 'bg-accent-yellow text-black' : 'bg-yellow-bg text-accent-yellow border border-accent-yellow/20'}`}
+            className={`flex-1 py-3.5 rounded-xl text-sm font-semibold transition ${myMember?.safety_status === 'waiting' ? 'bg-accent-yellow text-black' : 'bg-yellow-bg text-accent-yellow border border-accent-yellow/20'}`}
           >
             {t('group.waiting')}
           </button>
           <button
             onClick={() => handleSafety('sos')}
-            className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition ${myMember?.safety_status === 'sos' ? 'bg-accent-red text-white' : 'bg-red-bg text-accent-red border border-accent-red/20'}`}
+            className={`flex-1 py-3.5 rounded-xl text-sm font-semibold transition ${myMember?.safety_status === 'sos' ? 'bg-accent-red text-white' : 'bg-red-bg text-accent-red border border-accent-red/20'}`}
           >
             🆘 {t('group.sos')}
           </button>
@@ -137,7 +137,7 @@ function MembersTab({ groupId, members, isAdmin }) {
   const reviewRequest = useReviewRequest(groupId);
 
   return (
-    <div className="p-4 space-y-2">
+    <div className="px-6 py-4 space-y-3">
       {isAdmin && requests && requests.length > 0 && (
         <div className="mb-4">
           <h3 className="text-sm font-semibold text-accent-yellow mb-2">{t('group.pendingRequestsTitle')}</h3>
@@ -167,7 +167,7 @@ function MembersTab({ groupId, members, isAdmin }) {
       )}
 
       {members.map(m => (
-        <div key={m.id} className="bg-card border border-border-subtle rounded-xl p-3 flex items-center gap-3">
+        <div key={m.id} className="bg-card border border-border-subtle rounded-xl p-4 flex items-center gap-3">
           <Avatar name={m.name} url={m.avatar_url} />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-0.5">

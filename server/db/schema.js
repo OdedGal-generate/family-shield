@@ -5,8 +5,10 @@ export function createTables() {
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
-      email TEXT UNIQUE,
-      phone TEXT UNIQUE,
+      username TEXT UNIQUE NOT NULL,
+      password TEXT NOT NULL,
+      email TEXT,
+      phone TEXT,
       avatar_url TEXT,
       locale TEXT DEFAULT 'he',
       created_at TEXT DEFAULT (datetime('now'))
