@@ -19,6 +19,8 @@ export default function GroupPage() {
   const [tab, setTab] = useState('members');
   const [sosConfirm, setSosConfirm] = useState(false);
   const [inviteCopied, setInviteCopied] = useState(false);
+  // Must be called before any early returns (Rules of Hooks)
+  const { data: pendingRequests } = usePendingRequests(id);
 
   if (isLoading) return <LoadingScreen />;
   if (!data) return <div className="p-4 text-text-secondary">{t('common.error')}</div>;
@@ -26,8 +28,7 @@ export default function GroupPage() {
   const { group, members, myRole } = data;
   const myMember = members.find(m => m.id === user?.id);
   const isAdmin = myRole === 'owner' || myRole === 'admin';
-  const { data: pendingRequests } = usePendingRequests(isAdmin ? id : null);
-  const pendingCount = pendingRequests?.length || 0;
+  const pendingCount = isAdmin ? (pendingRequests?.length || 0) : 0;
 
   const handleSafety = (status) => {
     if (status === 'sos') {
