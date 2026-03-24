@@ -26,6 +26,8 @@ export default function GroupPage() {
   const { group, members, myRole } = data;
   const myMember = members.find(m => m.id === user?.id);
   const isAdmin = myRole === 'owner' || myRole === 'admin';
+  const { data: pendingRequests } = usePendingRequests(isAdmin ? id : null);
+  const pendingCount = pendingRequests?.length || 0;
 
   const handleSafety = (status) => {
     if (status === 'sos') {
@@ -131,6 +133,9 @@ export default function GroupPage() {
           className={`flex-1 py-3 text-sm font-medium text-center transition ${tab === 'members' ? 'text-accent-green border-b-2 border-accent-green' : 'text-text-secondary'}`}
         >
           {t('group.members')} ({members.length})
+            {pendingCount > 0 && (
+              <span className="ms-1.5 bg-accent-red text-white text-xs w-5 h-5 rounded-full inline-flex items-center justify-center font-bold">{pendingCount}</span>
+            )}
         </button>
         <button
           onClick={() => setTab('chat')}
@@ -143,7 +148,7 @@ export default function GroupPage() {
       {/* Tab Content */}
       <div className="flex-1 overflow-auto">
         {tab === 'members' ? (
-          <MembersTab groupId={id} members={members} isAdmin={isAdmin} />
+          <MembersTab groupId={id} members={members} isAdmin={isAdmin} pendingRequests={pendingRequests} />
         ) : (
           <ChatTab groupId={id} userId={user?.id} />
         )}
@@ -169,34 +174,38 @@ export default function GroupPage() {
   );
 }
 
-function MembersTab({ groupId, members, isAdmin }) {
+function MembersTab({ groupId, members, isAdmin, pendingRequests }) {
   const { t } = useTranslation();
-  const { data: requests } = usePendingRequests(isAdmin ? groupId : null);
   const reviewRequest = useReviewRequest(groupId);
 
   return (
     <div className="px-6 py-4 space-y-3">
-      {isAdmin && requests && requests.length > 0 && (
+      {isAdmin && pendingRequests && pendingRequests.length > 0 && (
         <div className="mb-4">
-          <h3 className="text-sm font-semibold text-accent-yellow mb-2">{t('group.pendingRequestsTitle')}</h3>
-          {requests.map(r => (
-            <div key={r.id} className="bg-yellow-bg border border-accent-yellow/20 rounded-xl p-3 flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-accent-yellow mb-2 flex items-center gap-2">
+            ⏳ {t('group.pendingRequestsTitle')}
+            <span className="bg-accent-red text-white text-xs w-5 h-5 rounded-full inline-flex items-center justify-center font-bold">{pendingRequests.length}</span>
+          </h3>
+          {pendingRequests.map(r => (
+            <div key={r.id} className="bg-yellow-bg border border-accent-yellow/30 rounded-xl p-4 flex items-center justify-between mb-2 animate-pulse-subtle">
+              <div className="flex items-center gap-3">
                 <Avatar name={r.user_name} url={r.user_avatar} size="sm" />
-                <span className="text-sm font-medium">{r.user_name}</span>
+                <span className="text-sm font-semibold">{r.user_name}</span>
               </div>
               <div className="flex gap-2">
                 <button
                   onClick={() => reviewRequest.mutate({ requestId: r.id, action: 'approve' })}
-                  className="bg-accent-green text-white text-xs px-3 py-1.5 rounded-lg"
+                  disabled={reviewRequest.isPending}
+                  className="bg-accent-green text-white text-xs px-4 py-2 rounded-lg font-semibold disabled:opacity-50"
                 >
-                  {t('group.approve')}
+                  ✓ {t('group.approve')}
                 </button>
                 <button
                   onClick={() => reviewRequest.mutate({ requestId: r.id, action: 'reject' })}
-                  className="bg-card border border-border-subtle text-text-secondary text-xs px-3 py-1.5 rounded-lg"
+                  disabled={reviewRequest.isPending}
+                  className="bg-card border border-border-subtle text-text-secondary text-xs px-4 py-2 rounded-lg disabled:opacity-50"
                 >
-                  {t('group.reject')}
+                  ✕ {t('group.reject')}
                 </button>
               </div>
             </div>

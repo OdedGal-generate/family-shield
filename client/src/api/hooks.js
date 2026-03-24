@@ -134,7 +134,8 @@ export const useJoinRequestStatus = (token, enabled) => useQuery({
 export const usePendingRequests = (groupId) => useQuery({
   queryKey: ['requests', groupId],
   queryFn: () => api.get(`/groups/${groupId}/requests`).then(r => r.data.requests),
-  enabled: !!groupId
+  enabled: !!groupId,
+  refetchInterval: 10000
 });
 
 export const useReviewRequest = (groupId) => {
